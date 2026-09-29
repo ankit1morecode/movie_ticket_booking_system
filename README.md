@@ -12,6 +12,7 @@ A simple **PERN stack** (PostgreSQL, Express, React, Node.js) application that h
 | Seat reservations | `seats` (physical seats) + `show_seats` (status of each seat for each show). A trigger auto-creates `show_seats` when a show is added. |
 | Pricing | `category_pricing` table (SILVER / GOLD / PLATINUM multipliers) and SQL function `seat_price()` → `base_price × multiplier`, +20% on weekends. |
 | Customer bookings | `customers`, `bookings`, `booking_seats`. Book, view by email, and cancel (seats are released). |
+| Ticket limit | A customer can hold **max 10 tickets per show** (across all bookings). Enforced in the UI, the API and by the DB trigger `max_tickets_per_customer`. |
 | Concurrent transactions | Booking runs in one transaction with `SELECT … FOR UPDATE` row locks, so the same seat can never be sold twice. See `server/scripts/concurrencyTest.js`. |
 | Reports | Revenue per movie and occupancy per show using `GROUP BY` / aggregate queries and views. |
 

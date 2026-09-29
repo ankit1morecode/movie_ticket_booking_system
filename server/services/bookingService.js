@@ -1,6 +1,6 @@
 const pool = require('../db');
 
-const MAX_SEATS_PER_BOOKING = 10;
+const MAX_TICKETS_PER_CUSTOMER = 10; // per show, across all bookings
 
 function httpError(status, message) {
   const err = new Error(message);
@@ -22,7 +22,7 @@ function httpError(status, message) {
 async function bookSeats({ name, email, phone, show_id, seat_ids }) {
   if (!name || !email) throw httpError(400, 'Name and email are required');
   if (!Array.isArray(seat_ids) || seat_ids.length === 0) throw httpError(400, 'Select at least one seat');
-  if (seat_ids.length > MAX_SEATS_PER_BOOKING) throw httpError(400, `Maximum ${MAX_SEATS_PER_BOOKING} seats per booking`);
+  if (seat_ids.length > MAX_TICKETS_PER_CUSTOMER) throw httpError(400, `Maximum ${MAX_TICKETS_PER_CUSTOMER} tickets per customer`);
 
   const client = await pool.connect();
   try {
@@ -43,7 +43,23 @@ async function bookSeats({ name, email, phone, show_id, seat_ids }) {
     if (!show.rows.length) throw httpError(404, 'Show not found');
     if (new Date(show.rows[0].start_time) <= new Date()) throw httpError(400, 'Show has already started');
 
-    // 3. Lock the requested seats (row-level locks)
+    // 3. Max 10 tickets per customer per show (also enforced by a DB trigger).
+    //    The UPSERT above row-locks this customer, so two parallel bookings
+    //    by the same customer run one after the other and can't both pass.
+    const held = await client.query(
+      `SELECT COUNT(*)::int AS n FROM booking_seats bs
+       JOIN bookings b ON b.booking_id = bs.booking_id
+       WHERE b.customer_id = $1 AND b.show_id = $2 AND b.status = 'CONFIRMED'`,
+      [customerId, show_id]
+    );
+    const alreadyHeld = held.rows[0].n;
+    if (alreadyHeld + seat_ids.length > MAX_TICKETS_PER_CUSTOMER) {
+      throw httpError(400,
+        `Maximum ${MAX_TICKETS_PER_CUSTOMER} tickets per customer for a show. ` +
+        `You already have ${alreadyHeld}, so you can book ${MAX_TICKETS_PER_CUSTOMER - alreadyHeld} more.`);
+    }
+
+    // 4. Lock the requested seats (row-level locks)
     const locked = await client.query(
       `SELECT ss.seat_id, ss.status, s.row_label || s.seat_number AS label
        FROM show_seats ss JOIN seats s ON s.seat_id = ss.seat_id
@@ -57,7 +73,7 @@ async function bookSeats({ name, email, phone, show_id, seat_ids }) {
     const taken = locked.rows.filter((r) => r.status !== 'AVAILABLE').map((r) => r.label);
     if (taken.length) throw httpError(409, `Seat(s) already booked: ${taken.join(', ')}`);
 
-    // 4. Create booking + booking_seats with computed price
+    // 5. Create booking + booking_seats with computed price
     const booking = await client.query(
       'INSERT INTO bookings (customer_id, show_id) VALUES ($1, $2) RETURNING booking_id',
       [customerId, show_id]
@@ -70,14 +86,14 @@ async function bookSeats({ name, email, phone, show_id, seat_ids }) {
       [bookingId, show_id, seat_ids]
     );
 
-    // 5. Mark seats as booked
+    // 6. Mark seats as booked
     await client.query(
       `UPDATE show_seats SET status = 'BOOKED', booking_id = $1
        WHERE show_id = $2 AND seat_id = ANY($3::int[])`,
       [bookingId, show_id, seat_ids]
     );
 
-    // 6. Total amount
+    // 7. Total amount
     await client.query(
       `UPDATE bookings SET total_amount =
          (SELECT SUM(price) FROM booking_seats WHERE booking_id = $1)

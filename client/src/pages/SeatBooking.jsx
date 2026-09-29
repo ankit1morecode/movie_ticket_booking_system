@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, formatDate, rupees } from '../api';
 
+const MAX_TICKETS = 10; // per customer per show (also checked by server + DB trigger)
+
 export default function SeatBooking({ showId, onBack }) {
   const [data, setData] = useState(null);
   const [selected, setSelected] = useState([]);
@@ -19,9 +21,13 @@ export default function SeatBooking({ showId, onBack }) {
 
   const toggle = (seat) => {
     if (seat.status !== 'AVAILABLE') return;
-    setSelected((cur) =>
-      cur.some((s) => s.seat_id === seat.seat_id) ? cur.filter((s) => s.seat_id !== seat.seat_id) : [...cur, seat]
-    );
+    const isSelected = selected.some((s) => s.seat_id === seat.seat_id);
+    if (!isSelected && selected.length >= MAX_TICKETS) {
+      setMessage({ error: `You can select at most ${MAX_TICKETS} seats` });
+      return;
+    }
+    setMessage(null);
+    setSelected(isSelected ? selected.filter((s) => s.seat_id !== seat.seat_id) : [...selected, seat]);
   };
 
   const total = selected.reduce((sum, s) => sum + Number(s.price), 0);
@@ -52,6 +58,7 @@ export default function SeatBooking({ showId, onBack }) {
       <h2>{show.title}</h2>
       <p className="muted">{show.theatre_name}, {show.city} — {show.screen_name} · {formatDate(show.start_time)}</p>
 
+      <p className="muted">Maximum {MAX_TICKETS} tickets per customer for a show.</p>
       <div className="legend">
         <span><i className="seat SILVER" /> Silver</span>
         <span><i className="seat GOLD" /> Gold</span>
@@ -89,7 +96,7 @@ export default function SeatBooking({ showId, onBack }) {
       {selected.length > 0 && (
         <form className="card booking-form" onSubmit={book}>
           <p>
-            Selected: <b>{selected.map((s) => s.row_label + s.seat_number).join(', ')}</b> · Total: <b>{rupees(total)}</b>
+            Selected ({selected.length}/{MAX_TICKETS}): <b>{selected.map((s) => s.row_label + s.seat_number).join(', ')}</b> · Total: <b>{rupees(total)}</b>
           </p>
           <input required placeholder="Name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
           <input required type="email" placeholder="Email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />

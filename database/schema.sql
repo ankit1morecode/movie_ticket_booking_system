@@ -183,6 +183,36 @@ RETURNS VOID AS $$
     FROM generate_series(1, p_rows) r, generate_series(1, p_per_row) n;
 $$ LANGUAGE sql;
 
+-- (e) Business rule: one customer can hold at most 10 tickets for a show
+--     (counted across all their CONFIRMED bookings for that show)
+CREATE OR REPLACE FUNCTION trg_max_tickets_per_customer() RETURNS TRIGGER AS $$
+DECLARE
+    v_customer INT;
+    v_show     INT;
+    v_count    INT;
+BEGIN
+    SELECT customer_id, show_id INTO v_customer, v_show
+    FROM bookings WHERE booking_id = NEW.booking_id;
+
+    SELECT COUNT(*) INTO v_count
+    FROM booking_seats bs
+    JOIN bookings b ON b.booking_id = bs.booking_id
+    WHERE b.customer_id = v_customer
+      AND b.show_id     = v_show
+      AND b.status      = 'CONFIRMED';
+
+    IF v_count > 10 THEN
+        RAISE EXCEPTION 'A customer can book at most 10 tickets per show';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- AFTER trigger: runs once all seats of the INSERT are in, so it sees the full count
+CREATE TRIGGER max_tickets_per_customer
+AFTER INSERT ON booking_seats
+FOR EACH ROW EXECUTE FUNCTION trg_max_tickets_per_customer();
+
 -- ---------------------------------------------------------------------
 -- 5. VIEWS
 -- ---------------------------------------------------------------------
