@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, formatDate, rupees } from '../api';
+import Poster from '../components/Poster';
 
 const MAX_TICKETS = 10; // per customer per show (also checked by server + DB trigger)
 
@@ -13,7 +14,7 @@ export default function SeatBooking({ showId, onBack }) {
 
   useEffect(() => { load(); }, [showId]);
 
-  if (!data) return <p className={message?.error ? 'error' : ''}>{message?.error || 'Loading...'}</p>;
+  if (!data) return <div className="container page"><p className={message?.error ? 'error' : ''}>{message?.error || 'Loading...'}</p></div>;
 
   // group seats by row for the seat map
   const rows = {};
@@ -53,12 +54,19 @@ export default function SeatBooking({ showId, onBack }) {
 
   const { show } = data;
   return (
-    <section>
-      <button className="link" onClick={onBack}>← Back to shows</button>
-      <h2>{show.title}</h2>
-      <p className="muted">{show.theatre_name}, {show.city} — {show.screen_name} · {formatDate(show.start_time)}</p>
+    <section className="container page">
+      <button className="link" onClick={onBack}>← Back to movies</button>
+      <div className="show-header">
+        <Poster src={show.poster_url} title={show.title} className="show-poster" />
+        <div>
+          <h2>{show.title}</h2>
+          <p className="muted">{show.genre} · {show.language} · {show.duration_min} min · <span className="tag">{show.rating}</span></p>
+          <p><b>{show.theatre_name}</b>, {show.city} — {show.screen_name}</p>
+          <p>{formatDate(show.start_time)}</p>
+          <p className="muted small">Maximum {MAX_TICKETS} tickets per customer for a show.</p>
+        </div>
+      </div>
 
-      <p className="muted">Maximum {MAX_TICKETS} tickets per customer for a show.</p>
       <div className="legend">
         <span><i className="seat SILVER" /> Silver</span>
         <span><i className="seat GOLD" /> Gold</span>
@@ -101,7 +109,7 @@ export default function SeatBooking({ showId, onBack }) {
           <input required placeholder="Name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
           <input required type="email" placeholder="Email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
           <input placeholder="Phone" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
-          <button type="submit">Confirm Booking</button>
+          <button type="submit" className="btn">Confirm Booking</button>
         </form>
       )}
     </section>

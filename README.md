@@ -15,6 +15,9 @@ A simple **PERN stack** (PostgreSQL, Express, React, Node.js) application that h
 | Ticket limit | A customer can hold **max 10 tickets per show** (across all bookings). Enforced in the UI, the API and by the DB trigger `max_tickets_per_customer`. |
 | Concurrent transactions | Booking runs in one transaction with `SELECT … FOR UPDATE` row locks, so the same seat can never be sold twice. See `server/scripts/concurrencyTest.js`. |
 | Reports | Revenue per movie and occupancy per show using `GROUP BY` / aggregate queries and views. |
+| Cinema-style UI | Dark theme with a rotating hero banner, date/time picker with "Buy ticket", poster grid with show times, "Coming soon" tab, filters and search. Posters are stored as `movies.poster_url` (sample data links to Wikipedia posters). |
+
+A full project report is included: `Movie_Ticket_Booking_System_Report.docx`.
 
 ## Project structure
 

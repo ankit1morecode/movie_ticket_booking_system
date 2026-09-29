@@ -84,6 +84,8 @@ export default function Admin() {
             { name: 'duration_min', placeholder: 'Duration (min)', type: 'number' },
             { name: 'rating', placeholder: 'Rating', options: ['U', 'UA', 'A'].map((r) => ({ value: r, label: r })) },
             { name: 'release_date', placeholder: 'Release date', type: 'date', optional: true },
+            { name: 'poster_url', placeholder: 'Poster image URL', type: 'url', optional: true },
+            { name: 'description', placeholder: 'Short description', optional: true },
           ]}
           onSubmit={(v) => run(() => api.post('/movies', v), 'Movie added')}
         />

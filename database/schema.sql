@@ -26,7 +26,9 @@ CREATE TABLE movies (
     language      VARCHAR(30),
     duration_min  INT NOT NULL CHECK (duration_min > 0),
     rating        VARCHAR(5) CHECK (rating IN ('U', 'UA', 'A')),
-    release_date  DATE
+    release_date  DATE,
+    description   TEXT,
+    poster_url    VARCHAR(500)
 );
 
 CREATE TABLE theatres (
@@ -219,6 +221,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_max_tickets_per_customer();
 CREATE VIEW v_show_details AS
 SELECT sh.show_id, sh.start_time, sh.end_time, sh.base_price,
        m.movie_id, m.title, m.genre, m.language, m.duration_min, m.rating,
+       m.release_date, m.description, m.poster_url,
        t.theatre_id, t.name AS theatre_name, t.city,
        sc.screen_id, sc.name AS screen_name,
        COUNT(ss.seat_id) FILTER (WHERE ss.status = 'AVAILABLE') AS available_seats,
