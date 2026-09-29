@@ -56,6 +56,9 @@ npm run server           # terminal 1 -> http://localhost:5000
 npm run client           # terminal 2 -> http://localhost:5173
 ```
 
+> **Already set up the database earlier?** Run `npm run db:migrate` to upgrade it to the
+> latest schema **without losing data** (or `npm run db:setup` to reset everything to sample data).
+
 ### Or step by step
 
 1. Configure and start the backend:
