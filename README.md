@@ -42,19 +42,15 @@ bookings 1─* booking_seats *─1 seats
 
 **Requirements:** Node.js 18+ and PostgreSQL 13+.
 
-1. Create the database:
-   ```bash
-   psql -U postgres -c "CREATE DATABASE movie_booking;"
-   ```
-2. Configure and start the backend:
+1. Configure and start the backend:
    ```bash
    cd server
    cp .env.example .env      # then put your PostgreSQL password in .env
    npm install
-   npm run db:setup          # creates tables + sample data
+   npm run db:setup          # creates the database, tables + sample data
    npm run dev               # http://localhost:5000
    ```
-3. Start the frontend (new terminal):
+2. Start the frontend (new terminal):
    ```bash
    cd client
    npm install
