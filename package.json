@@ -1,0 +1,13 @@
+{
+  "name": "movie-ticket-booking-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Movie Ticket Booking System - PERN stack DBMS project",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "db:setup": "npm run db:setup --prefix server",
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "test:concurrency": "npm run test:concurrency --prefix server"
+  }
+}

@@ -42,6 +42,18 @@ bookings 1─* booking_seats *─1 seats
 
 **Requirements:** Node.js 18+ and PostgreSQL 13+.
 
+### Quick start (from the project root)
+
+```bash
+npm run install:all      # installs server + client packages
+# copy server/.env.example to server/.env and set DB_PASSWORD
+npm run db:setup         # creates database, tables + sample data
+npm run server           # terminal 1 -> http://localhost:5000
+npm run client           # terminal 2 -> http://localhost:5173
+```
+
+### Or step by step
+
 1. Configure and start the backend:
    ```bash
    cd server
