@@ -1,5 +1,7 @@
 # 🎬 Movie Ticket Booking System (DBMS Project)
 
+**Live demo:** https://movie-ticket-booking-system-azure.vercel.app  (hosted on Vercel, database on Supabase)
+
 A simple **PERN stack** (PostgreSQL, Express, React, Node.js) application that handles
 **theatre schedules, seat reservations, pricing, and customer bookings** with
 **concurrent transaction management**.
@@ -134,3 +136,10 @@ COMMIT;
 | GET/POST | `/api/bookings` | List (`?email=`) / create booking |
 | POST | `/api/bookings/:id/cancel` | Cancel booking |
 | GET | `/api/reports` | Revenue and occupancy |
+
+## Deployment (Vercel)
+
+- `vercel.json` builds the React client (`client/dist`) and sends every `/api/*` request to
+  `api/index.js`, a serverless function that runs the same Express app (`server/app.js`).
+- Set `DATABASE_URL` (Supabase Session pooler string) in the Vercel project's Environment Variables.
+- Deploy with `vercel deploy --prod`. The first request after a while may take a few seconds (cold start).
