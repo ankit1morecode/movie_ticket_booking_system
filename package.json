@@ -10,5 +10,11 @@
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "test:concurrency": "npm run test:concurrency --prefix server"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pg": "^8.13.1"
   }
 }

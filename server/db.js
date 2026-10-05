@@ -14,7 +14,8 @@ const config = process.env.DATABASE_URL
       database: process.env.DB_NAME,
     };
 
-const pool = new Pool(config);
+// On Vercel each serverless instance keeps only a few connections
+const pool = new Pool({ ...config, max: process.env.VERCEL ? 3 : 10 });
 
 module.exports = pool;
 module.exports.config = config;
