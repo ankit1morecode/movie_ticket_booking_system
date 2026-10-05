@@ -138,7 +138,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER show_before_insert
 BEFORE INSERT OR UPDATE ON shows
@@ -151,7 +151,7 @@ BEGIN
     SELECT NEW.show_id, seat_id FROM seats WHERE screen_id = NEW.screen_id;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 CREATE TRIGGER show_after_insert
 AFTER INSERT ON shows
@@ -169,7 +169,7 @@ RETURNS NUMERIC AS $$
     JOIN seats s            ON s.seat_id = p_seat_id
     JOIN category_pricing cp ON cp.category = s.category
     WHERE sh.show_id = p_show_id;
-$$ LANGUAGE sql STABLE;
+$$ LANGUAGE sql STABLE SET search_path = public;
 
 -- (d) Helper to create a grid of seats for a screen.
 --     Last 2 rows = PLATINUM, first 2 rows = SILVER, rest = GOLD
@@ -183,7 +183,7 @@ RETURNS VOID AS $$
                 WHEN r <= 2         THEN 'SILVER'
                 ELSE 'GOLD' END
     FROM generate_series(1, p_rows) r, generate_series(1, p_per_row) n;
-$$ LANGUAGE sql;
+$$ LANGUAGE sql SET search_path = public;
 
 -- (e) Business rule: one customer can hold at most 10 tickets for a show
 --     (counted across all their CONFIRMED bookings for that show)
@@ -208,7 +208,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 -- AFTER trigger: runs once all seats of the INSERT are in, so it sees the full count
 CREATE TRIGGER max_tickets_per_customer
@@ -218,7 +218,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_max_tickets_per_customer();
 -- ---------------------------------------------------------------------
 -- 5. VIEWS
 -- ---------------------------------------------------------------------
-CREATE VIEW v_show_details AS
+CREATE VIEW v_show_details WITH (security_invoker = on) AS
 SELECT sh.show_id, sh.start_time, sh.end_time, sh.base_price,
        m.movie_id, m.title, m.genre, m.language, m.duration_min, m.rating,
        m.release_date, m.description, m.poster_url,
@@ -233,7 +233,7 @@ JOIN theatres t  ON t.theatre_id = sc.theatre_id
 LEFT JOIN show_seats ss ON ss.show_id = sh.show_id
 GROUP BY sh.show_id, m.movie_id, t.theatre_id, sc.screen_id;
 
-CREATE VIEW v_booking_details AS
+CREATE VIEW v_booking_details WITH (security_invoker = on) AS
 SELECT b.booking_id, b.booking_time, b.total_amount, b.status,
        c.customer_id, c.name AS customer_name, c.email,
        m.title, t.name AS theatre_name, sc.name AS screen_name, sh.start_time,
@@ -247,3 +247,19 @@ JOIN theatres t       ON t.theatre_id  = sc.theatre_id
 JOIN booking_seats bs ON bs.booking_id = b.booking_id
 JOIN seats s          ON s.seat_id     = bs.seat_id
 GROUP BY b.booking_id, c.customer_id, m.title, t.name, sc.name, sh.start_time;
+
+-- ---------------------------------------------------------------------
+-- Row Level Security: block direct access through Supabase's public API.
+-- The Express server connects as the table owner, which bypasses RLS,
+-- so all data access goes through our API (and its transactions).
+-- ---------------------------------------------------------------------
+ALTER TABLE customers        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movies           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE theatres         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE screens          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE category_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seats            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shows            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE show_seats       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_seats    ENABLE ROW LEVEL SECURITY;

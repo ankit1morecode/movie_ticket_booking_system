@@ -57,7 +57,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql SET search_path = public;
 
 DROP TRIGGER IF EXISTS max_tickets_per_customer ON booking_seats;
 CREATE TRIGGER max_tickets_per_customer
@@ -66,7 +66,7 @@ FOR EACH ROW EXECUTE FUNCTION trg_max_tickets_per_customer();
 
 -- 3. Recreate the show view so it includes the new movie columns
 DROP VIEW IF EXISTS v_show_details;
-CREATE VIEW v_show_details AS
+CREATE VIEW v_show_details WITH (security_invoker = on) AS
 SELECT sh.show_id, sh.start_time, sh.end_time, sh.base_price,
        m.movie_id, m.title, m.genre, m.language, m.duration_min, m.rating,
        m.release_date, m.description, m.poster_url,
@@ -80,3 +80,19 @@ JOIN screens  sc ON sc.screen_id = sh.screen_id
 JOIN theatres t  ON t.theatre_id = sc.theatre_id
 LEFT JOIN show_seats ss ON ss.show_id = sh.show_id
 GROUP BY sh.show_id, m.movie_id, t.theatre_id, sc.screen_id;
+
+-- ---------------------------------------------------------------------
+-- Row Level Security: block direct access through Supabase's public API.
+-- The Express server connects as the table owner, which bypasses RLS,
+-- so all data access goes through our API (and its transactions).
+-- ---------------------------------------------------------------------
+ALTER TABLE customers        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE movies           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE theatres         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE screens          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE category_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seats            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE shows            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE show_seats       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookings         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_seats    ENABLE ROW LEVEL SECURITY;

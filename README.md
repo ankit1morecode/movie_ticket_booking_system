@@ -44,7 +44,19 @@ bookings 1─* booking_seats *─1 seats
 
 ## Setup
 
-**Requirements:** Node.js 18+ and PostgreSQL 13+.
+**Requirements:** Node.js 18+ and either a **Supabase** project or a local **PostgreSQL 15+**.
+
+### Database: Supabase (hosted) or local PostgreSQL
+
+The server picks the database from `server/.env`:
+
+- **Supabase** — set `DATABASE_URL` to the project's **Session pooler** connection string
+  (Supabase dashboard → *Connect* → *Session pooler*). The connection uses SSL.
+  All tables have Row Level Security enabled with no policies, so they can't be read or
+  changed through Supabase's public REST API — only through this project's Express API.
+- **Local PostgreSQL** — leave `DATABASE_URL` unset and fill `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+
+`npm run db:setup` works for both (on Supabase it skips creating the database).
 
 ### Quick start (from the project root)
 

@@ -1,31 +1,27 @@
 // Creates the database (if missing), all tables/functions/views and loads sample data.
-// Usage: npm run db:setup
+// WARNING: this resets all data.  Usage: npm run db:setup
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
-require('dotenv').config();
-
-const config = {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-};
+const { config } = require('../db');
 
 (async () => {
   try {
-    // 1. Connect to the default "postgres" database and create ours if needed
-    const admin = new Client({ ...config, database: 'postgres' });
-    await admin.connect();
-    const exists = await admin.query('SELECT 1 FROM pg_database WHERE datname = $1', [process.env.DB_NAME]);
-    if (!exists.rows.length) {
-      await admin.query(`CREATE DATABASE "${process.env.DB_NAME}"`);
-      console.log(`Database "${process.env.DB_NAME}" created`);
+    // 1. Local PostgreSQL only: create the database if it doesn't exist
+    //    (a hosted database like Supabase already has one)
+    if (!process.env.DATABASE_URL) {
+      const admin = new Client({ ...config, database: 'postgres' });
+      await admin.connect();
+      const exists = await admin.query('SELECT 1 FROM pg_database WHERE datname = $1', [config.database]);
+      if (!exists.rows.length) {
+        await admin.query(`CREATE DATABASE "${config.database}"`);
+        console.log(`Database "${config.database}" created`);
+      }
+      await admin.end();
     }
-    await admin.end();
 
     // 2. Create schema and load sample data
-    const db = new Client({ ...config, database: process.env.DB_NAME });
+    const db = new Client(config);
     await db.connect();
     const dir = path.join(__dirname, '..', '..', 'database');
     await db.query(fs.readFileSync(path.join(dir, 'schema.sql'), 'utf8'));
