@@ -1,5 +1,10 @@
-const { Pool } = require('pg');
+const { Pool, types } = require('pg');
 require('dotenv').config();
+
+// Show times are stored as TIMESTAMP (no time zone) in Indian time.
+// Read them as IST no matter where the server runs (Vercel servers use UTC).
+const TIMESTAMP_OID = 1114;
+types.setTypeParser(TIMESTAMP_OID, (value) => new Date(`${value.replace(' ', 'T')}+05:30`));
 
 // Two ways to connect:
 //  1. DATABASE_URL  -> a hosted database such as Supabase (uses SSL)
